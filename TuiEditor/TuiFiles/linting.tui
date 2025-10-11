@@ -1,0 +1,14 @@
+rules = {
+    "equalityToNil"
+    "inequalityToNil"
+}
+
+searchExpression = {
+    equalityToNil = " == nil"
+    inequalityToNil = " != nil"
+}
+
+errorMessage = {
+    equalityToNil = "Check for nil with `if (variable)` instead of `if (variable == nil)`"
+    inequalityToNil = "Check for nil with `if (!variable)` instead of `if (variable != nil)`"
+}
