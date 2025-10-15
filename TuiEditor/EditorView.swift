@@ -40,12 +40,23 @@ struct EditorView: View {
                 VStack(alignment: .leading) {
                     Text("Script:")
                         .font(.headline)
-                    Spacer()
-                    TextEditor(text: $viewModel.attributedScriptText, selection: $viewModel.selection)
-                        .font(.system(size: viewModel.fontSize))
-                        .onKeyPress { key in
-                            viewModel.keyPressed(key)
-                        }
+                    HStack {
+                        TextEditor(text: $viewModel.attributedScriptText, selection: $viewModel.selection)
+                            .font(.system(size: viewModel.fontSize))
+                            .onKeyPress { key in
+                                viewModel.keyPressed(key)
+                            }
+//                            .background(alignment: .topLeading) {
+//                                VStack {
+//                                    ForEach(viewModel.lineNumbers, id: \.self) { lineNumber in
+//                                        Text("\(lineNumber)")
+//                                    }
+//                                    Spacer()
+//                                }
+//                            }
+                    }
+                    
+//                    CustomTextEditorView()
                 }
                 .frame(maxWidth: .infinity)
                 VStack(alignment: .leading) {
@@ -87,6 +98,37 @@ extension NSTextView {
         didSet {
             self.isAutomaticQuoteSubstitutionEnabled = false
         }
+    }
+}
+
+class TextViewController: NSViewController {
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        
+        let scrollView = NSScrollView()
+        let textView = NSTextView()
+        textView.backgroundColor = .red
+        textView.textColor = .green
+
+        scrollView.documentView = textView
+//        scrollView.rulersVisible = true
+        
+//        scrollView.addFloatingSubview(floatingView, for: .vertical)
+        self.view = scrollView
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+struct CustomTextEditorView: NSViewControllerRepresentable {
+    func makeNSViewController(context: Self.Context) -> TextViewController {
+        TextViewController()
+    }
+    
+    func updateNSViewController(_ nsViewController: TextViewController, context: Self.Context) {
+        print("update")
     }
 }
 
