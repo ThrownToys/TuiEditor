@@ -1,6 +1,9 @@
 #
 # Some very basic syntax highlighting
 #
+# This currently processes the file multiple times for each type of hightlighting.
+# It would likely be faster to iterate only once, which would be a future possible improvement.
+#
 
 colors = {
     red = "0xCC2222"
