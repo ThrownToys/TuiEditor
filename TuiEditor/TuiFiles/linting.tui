@@ -1,14 +1,14 @@
 rules = {
-    "equalityToNil"
-    "inequalityToNil"
+    "plaintextOr"
+    "plaintextAnd"
 }
 
 searchExpression = {
-    equalityToNil = " == nil"
-    inequalityToNil = " != nil"
+    plaintextOr = " || "
+    plaintextAnd = " && "
 }
 
 errorMessage = {
-    equalityToNil = "Check for nil with `if (variable)` instead of `if (variable == nil)`"
-    inequalityToNil = "Check for nil with `if (!variable)` instead of `if (variable != nil)`"
+    plaintextOr = "Use `or` instead of `||`"
+    plaintextAnd = "Use `and` instead of `&&`"
 }

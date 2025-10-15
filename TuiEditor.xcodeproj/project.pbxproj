@@ -20,7 +20,6 @@
 			buildPhase = 054E6B8D2E8BA59B00DA47FB /* Sources */;
 			membershipExceptions = (
 				SwiftClosure.h,
-				TuiFiles/beep.tui,
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */

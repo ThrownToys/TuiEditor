@@ -13,14 +13,11 @@ struct TuiEditorApp: App {
     
     @State private var isImporting: Bool = false
     
-    @State var dynamicTypeSize: DynamicTypeSize = .medium
-    
     let viewModel = EditorViewModel()
     
     var body: some Scene {
         WindowGroup {
             EditorView(viewModel: viewModel)
-                .dynamicTypeSize(dynamicTypeSize)
         }
         .commands {
             CommandMenu("Font") {

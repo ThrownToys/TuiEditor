@@ -72,7 +72,7 @@ class EditorViewModel {
             
             return tuiRef?.withMemoryRebound(to: TuiString.self, capacity: 1) { pointer in
                 let stringValue = pointer.pointee.value
-                print("Tui completed with returnValue: \(stringValue)")
+                print("\(stringValue)")
                 return "\(stringValue)"
             }
         }
@@ -126,17 +126,20 @@ class EditorViewModel {
         var word: String?
         
         var currentIndex = script.startIndex
+        var braceCount = 0
         while currentIndex != script.endIndex {
             let currentChar = script.characters[currentIndex]
             
-            if currentChar == "^", script.characters[script.index(beforeCharacter: currentIndex)] != "\"" {
+            if startOfTextIndex == nil, currentChar == "^", !(script.characters[script.index(beforeCharacter: currentIndex)] == "\"" && script.characters[script.index(beforeCharacter: script.index(beforeCharacter: currentIndex))] == "(") {
                 let nextIndex = script.index(afterCharacter: currentIndex)
                 let nextChar = script.characters[nextIndex]
                 if nextChar == "[" {
+                    braceCount += 1
                     currentIndex = script.index(afterCharacter: nextIndex)
                     startOfTextIndex = currentIndex
                 }
-            } else if let startOfTextIndex, currentChar == "]" {
+            } else if let startOfTextIndex, currentChar == "]", braceCount == 1 {
+                braceCount -= 1
                 word = String(script[startOfTextIndex..<currentIndex].characters)
                 clearStartOfText()
             } else if word != nil, currentChar == "(" {
@@ -168,6 +171,10 @@ class EditorViewModel {
                 clearStartOfAttributes()
             } else if startOfTextIndex == nil, startOfAttributesIndex == nil {
                 newScript.append(AttributedString("\(currentChar)"))
+            } else if currentChar == "[" {
+                braceCount += 1
+            } else if currentChar == "]" {
+                braceCount -= 1
             }
             
             currentIndex = script.index(afterCharacter: currentIndex)
@@ -175,7 +182,11 @@ class EditorViewModel {
         
         if case .insertionPoint(let index) = selection.indices(in: attributedScriptText) {
             let counter = attributedScriptText.utf16.distance(from: attributedScriptText.startIndex, to: index)
-            selection = .init(insertionPoint: newScript.index(newScript.startIndex, offsetByCharacters: counter))
+            if newScript.utf16.count > counter {
+                selection = .init(insertionPoint: newScript.index(newScript.startIndex, offsetByCharacters: counter))
+            } else {
+                selection = .init()
+            }
         }
         
         return newScript
@@ -267,11 +278,9 @@ class EditorViewModel {
         }
         
         let context = Unmanaged.passUnretained(self).toOpaque()
-        argsClosure = SwiftClosure(context, currentScriptClosure)
-        if let argsClosure {
-            argsClosure.setFunctionWithReturnValue("currentScript", rootTablePointer)
-            customFuncs.append(closure)
-        }
+        closure = SwiftClosure(context, currentScriptClosure)
+        closure.setFunctionWithReturnValue("currentScript", rootTablePointer)
+        customFuncs.append(closure)
         
         let readInputClosure: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutablePointer<CChar>?) = { _ in
             
@@ -294,11 +303,9 @@ class EditorViewModel {
             }
         }
         
-        argsClosure = SwiftClosure(context, readInputClosure)
-        if let argsClosure {
-            argsClosure.setFunctionWithReturnValue("readInput", rootTablePointer)
-            customFuncs.append(closure)
-        }
+        closure = SwiftClosure(context, readInputClosure)
+        closure.setFunctionWithReturnValue("readInput", rootTablePointer)
+        customFuncs.append(closure)
         
         let bundleLoadClosure: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutablePointer<CChar>?) = { args in
             var tuiTable = args.load(as: TuiTable.self)
@@ -325,11 +332,9 @@ class EditorViewModel {
 
         }
         
-        argsClosure = SwiftClosure(bundleLoadClosure)
-        if let argsClosure {
-            argsClosure.setFunctionWithArgs("bundleLoad", rootTablePointer)
-            customFuncs.append(argsClosure)
-        }
+        closure = SwiftClosure(bundleLoadClosure)
+        closure.setFunctionWithArgs("bundleLoad", rootTablePointer)
+        customFuncs.append(closure)
         
         setOtherFunctions(rootTablePointer)
         
@@ -337,7 +342,7 @@ class EditorViewModel {
     
     func scriptModified(_ updatedScript: String) {
         scriptText = updatedScript
-        runSyntaxHighlighting()
+//        runSyntaxHighlighting()
     }
     
     func keyPressed(_ key: KeyPress) -> KeyPress.Result {
@@ -375,7 +380,7 @@ class EditorViewModel {
             if key.characters == "\u{7F}" { // backspace
                 attributedScriptText.transform(updating: &selection) { scriptText in
                     let prevIndex = scriptText.index(beforeCharacter: index)
-                    scriptText.replaceSubrange(prevIndex..<index, with: AttributedString(""))
+                    scriptText.removeSubrange(prevIndex..<index)
                 }
                 scriptModified(String(attributedScriptText.characters))
                 return .handled
@@ -384,11 +389,19 @@ class EditorViewModel {
         
         var set: CharacterSet = CharacterSet.alphanumerics
         set.formUnion(.punctuationCharacters)
-        set.formUnion(.whitespacesAndNewlines)
         set.formUnion(.symbols)
         
-        if let unicodeScaler = key.characters.unicodeScalars.first,
-           set.contains(unicodeScaler) {
+        guard let unicodeScaler = key.characters.unicodeScalars.first else { return .ignored }
+        
+        if CharacterSet.whitespacesAndNewlines.contains(unicodeScaler) {
+            attributedScriptText.transform(updating: &selection) { scriptText in
+                if let char = key.characters.first {
+                    scriptText.insert(AttributedString(String(char)), at: index)
+                }
+            }
+            scriptModified(String(attributedScriptText.characters))
+            runSyntaxHighlighting()
+        } else if set.contains(unicodeScaler) {
             attributedScriptText.transform(updating: &selection) { scriptText in
                 if let char = key.characters.first {
                     scriptText.insert(AttributedString(String(char)), at: index)
