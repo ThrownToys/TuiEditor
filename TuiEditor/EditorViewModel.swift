@@ -294,17 +294,15 @@ class EditorViewModel {
             let alert = NSAlert()
             alert.addButton(withTitle: "Done")
             alert.messageText = "User input (yes/no): "
-            let textView = NSTextView()
-            textView.frame.size = CGSize(width: 100, height: 20)
-            textView.font = .systemFont(ofSize: 12.0)
-            textView.backgroundColor = .textBackgroundColor
-            textView.textColor = .labelColor
-            alert.accessoryView = textView
+            let textField = NSTextField()
+            textField.frame.size = CGSize(width: 100, height: 20)
+            textField.font = .systemFont(ofSize: 12.0)
+            textField.backgroundColor = .textBackgroundColor
+            textField.textColor = .labelColor
+            alert.accessoryView = textField
             alert.runModal()
             
-            let input = textView.string.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            return input.withCString { cStr in
+            return textField.stringValue.withCString { cStr in
                 let newString = strdup(cStr) // Caller (C++) frees this
                 return newString
             }
