@@ -11,48 +11,66 @@ internal import UniformTypeIdentifiers
 @main
 struct TuiEditorApp: App {
     
+    @Environment(\.openWindow) private var openWindow
     @State private var isImporting: Bool = false
     
-    let viewModel = EditorViewModel()
+    // Pull the focused window’s model from FocusedValues
+    @FocusedValue(\.editorViewModel) private var focusedEditor: EditorViewModel?
+    
+//    @State var viewModel = EditorViewModel(Bundle.main.url(forResource: "example", withExtension: "tui"))
     
     var body: some Scene {
-        WindowGroup {
-            EditorView(viewModel: viewModel)
+        WindowGroup(id: "tui-editor", for: Optional<URL>.self) { url in
+            EditorView(url: url.wrappedValue)
+        } defaultValue: {
+            Bundle.main.url(forResource: "example", withExtension: "tui")
         }
         .commands {
             CommandMenu("Font") {
                 Button("Increase", systemImage: "plus") {
-                    viewModel.increaseFontSize()
+                    focusedEditor?.increaseFontSize()
                 }
                 .keyboardShortcut("+")
+                
                 Button("Decrease", systemImage: "minus") {
-                    viewModel.decreaseFontSize()
+                    focusedEditor?.decreaseFontSize()
                 }
                 .keyboardShortcut("-")
             }
             CommandMenu("Run") {
                 Button("Run", systemImage: "play.fill") {
-                    viewModel.runTui()
+                    focusedEditor?.runTui()
                 }
                 .keyboardShortcut("R")
+            }
+            CommandGroup(replacing: .newItem) {
+                Button("New") {
+                    openWindow(id: "tui-editor", value: nil as URL?)
+                }
+                .keyboardShortcut("N")
             }
             CommandGroup(after: .newItem) {
                 Button("Open", systemImage: "arrow.up.forward.square") {
                     isImporting = true
                 }
                 .keyboardShortcut("O")
-                .fileImporter(isPresented: $isImporting, allowedContentTypes: [.init(filenameExtension: "tui")].compactMap{ $0 }) { result in
+                .fileImporter(
+                    isPresented: $isImporting,
+                    allowedContentTypes: [.init(filenameExtension: "tui")].compactMap { $0 }
+                ) { result in
                     switch result {
-                    case .success(let success):
-                        viewModel.openFile(success)
-                        viewModel.runSyntaxHighlighting()
-                    case .failure(let failure):
-                        debugPrint("Error opening file: \(failure)")
+                    case .success(let url):
+                        // Route to the focused window’s model
+                        focusedEditor?.openFile(url)
+                        focusedEditor?.runSyntaxHighlighting()
+                    case .failure(let error):
+                        debugPrint("Error opening file: \(error)")
                     }
                 }
                 .fileDialogDefaultDirectory(Bundle.main.bundleURL.appending(path: "Contents/Resources"))
+                
                 Button("Save", systemImage: "square.and.arrow.down") {
-                    viewModel.saveFile()
+                    focusedEditor?.saveFile()
                 }
                 .keyboardShortcut("S")
             }

@@ -31,12 +31,12 @@ class EditorViewModel {
         fileUrl != nil && fileUrl == Bundle.main.url(forResource: "syntaxHighlighting", withExtension: "tui")
     }
     
-    init() {
+    init(_ fileUrl: URL? = nil) {
         customFuncs = []
         rootTablePointer = Tui.createRootTable()
         setupCustomFunctions()
         
-        fileUrl = Bundle.main.url(forResource: "example", withExtension: "tui")
+        self.fileUrl = fileUrl
         
         if let scriptPath = fileUrl?.path() {
             do {
@@ -47,7 +47,9 @@ class EditorViewModel {
             }
         }
         
-        startListeningToStdout()
+        if inputPipe == nil {
+            startListeningToStdout()
+        }
     }
     
     isolated deinit {

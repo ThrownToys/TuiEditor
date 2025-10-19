@@ -9,12 +9,27 @@
 import SwiftUI
 import Tui
 
+private struct FocusedEditorViewModelKey: FocusedValueKey {
+    typealias Value = EditorViewModel
+}
+
+extension FocusedValues {
+    var editorViewModel: EditorViewModel? {
+        get { self[FocusedEditorViewModelKey.self] }
+        set { self[FocusedEditorViewModelKey.self] = newValue }
+    }
+}
+
 struct EditorView: View {
     
-    @Bindable var viewModel: EditorViewModel
+    @State var viewModel: EditorViewModel
     
     init(viewModel: EditorViewModel) {
         self.viewModel = viewModel
+    }
+    
+    init(url: URL?) {
+        self.viewModel = EditorViewModel(url)
     }
     
     var body: some View {
@@ -64,6 +79,8 @@ struct EditorView: View {
         .onChange(of: viewModel.attributedScriptText) { _, newValue in
             viewModel.clearLog()
         }
+        // Expose this window’s model to focused scene values
+        .focusedSceneValue(\.editorViewModel, viewModel)
     }
 }
 
