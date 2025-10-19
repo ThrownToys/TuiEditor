@@ -6,6 +6,7 @@
 import SwiftUI
 
 import Tui
+
 internal import UniformTypeIdentifiers
 
 @main
@@ -16,6 +17,8 @@ struct TuiEditorApp: App {
     
     // Pull the focused window’s model from FocusedValues
     @FocusedValue(\.editorViewModel) private var focusedEditor: EditorViewModel?
+
+    @ObservedObject var appViewModel = AppViewModel()
     
 //    @State var viewModel = EditorViewModel(Bundle.main.url(forResource: "example", withExtension: "tui"))
     
@@ -39,6 +42,7 @@ struct TuiEditorApp: App {
             }
             CommandMenu("Run") {
                 Button("Run", systemImage: "play.fill") {
+                    appViewModel.clearLog()
                     focusedEditor?.runTui()
                 }
                 .keyboardShortcut("R")
@@ -75,5 +79,9 @@ struct TuiEditorApp: App {
                 .keyboardShortcut("S")
             }
         }
+        .onChange(of: appViewModel.outputText) { oldValue, newValue in
+            focusedEditor?.outputText = newValue
+        }
     }
+
 }

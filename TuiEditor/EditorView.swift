@@ -7,6 +7,8 @@
 /// Far from being a complete IDE, this is just a simple example of including Tui in a swift project.
 
 import SwiftUI
+public import AppKit
+
 import Tui
 
 private struct FocusedEditorViewModelKey: FocusedValueKey {
@@ -76,10 +78,6 @@ struct EditorView: View {
             
         }
         .padding()
-        .onChange(of: viewModel.attributedScriptText) { _, newValue in
-            viewModel.clearLog()
-        }
-        // Expose this window’s model to focused scene values
         .focusedSceneValue(\.editorViewModel, viewModel)
     }
 }
