@@ -16,8 +16,6 @@ class EditorViewModel {
     var attributedScriptText: AttributedString = ""
     var selection: AttributedTextSelection = .init()
     var outputText = ""
-    var inputPipe: Pipe?
-    var outputPipe: Pipe?
     
     var fontSize = 12.0
     var customFuncs: [SwiftClosure]
@@ -31,12 +29,12 @@ class EditorViewModel {
         fileUrl != nil && fileUrl == Bundle.main.url(forResource: "syntaxHighlighting", withExtension: "tui")
     }
     
-    init() {
+    init(_ fileUrl: URL? = nil) {
         customFuncs = []
         rootTablePointer = Tui.createRootTable()
         setupCustomFunctions()
         
-        fileUrl = Bundle.main.url(forResource: "example", withExtension: "tui")
+        self.fileUrl = fileUrl
         
         if let scriptPath = fileUrl?.path() {
             do {
@@ -46,13 +44,8 @@ class EditorViewModel {
                 debugPrint("Error reading file: \(error)")
             }
         }
-        
-        startListeningToStdout()
     }
-    
-    isolated deinit {
-        stopListeningToStdout()
-    }
+
     
     func increaseFontSize() {
         fontSize += 1.0
@@ -412,37 +405,5 @@ class EditorViewModel {
         
         return .handled
     }
-    
-    private func startListeningToStdout() {
 
-        inputPipe = Pipe()
-        outputPipe = Pipe()
-        
-        guard let inputPipe, let outputPipe else { return }
-        
-        let pipeReadHandle = inputPipe.fileHandleForReading
-
-        dup2(STDOUT_FILENO, outputPipe.fileHandleForWriting.fileDescriptor)
-        
-        dup2(inputPipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
-//        dup2(inputPipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO)
-
-        NotificationCenter.default.addObserver(self, selector: #selector(self.handlePipeNotification), name: FileHandle.readCompletionNotification, object: pipeReadHandle)
-
-        pipeReadHandle.readInBackgroundAndNotify(forModes: [RunLoop.Mode.common])
-    }
-    
-    @objc func handlePipeNotification(notification: Notification) {
-        inputPipe?.fileHandleForReading.readInBackgroundAndNotify(forModes: [RunLoop.Mode.common])
-        
-        if let data = notification.userInfo?[NSFileHandleNotificationDataItem] as? Data,
-           let str = String(data: data, encoding: String.Encoding.ascii) {
-            outputPipe?.fileHandleForWriting.write(data)
-            outputText.append(str)
-        }
-    }
-    
-    private func stopListeningToStdout() {
-        NotificationCenter.default.removeObserver(self)
-    }
 }

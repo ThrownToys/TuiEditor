@@ -7,14 +7,31 @@
 /// Far from being a complete IDE, this is just a simple example of including Tui in a swift project.
 
 import SwiftUI
+public import AppKit
+
 import Tui
+
+private struct FocusedEditorViewModelKey: FocusedValueKey {
+    typealias Value = EditorViewModel
+}
+
+extension FocusedValues {
+    var editorViewModel: EditorViewModel? {
+        get { self[FocusedEditorViewModelKey.self] }
+        set { self[FocusedEditorViewModelKey.self] = newValue }
+    }
+}
 
 struct EditorView: View {
     
-    @Bindable var viewModel: EditorViewModel
+    @State var viewModel: EditorViewModel
     
     init(viewModel: EditorViewModel) {
         self.viewModel = viewModel
+    }
+    
+    init(url: URL?) {
+        self.viewModel = EditorViewModel(url)
     }
     
     var body: some View {
@@ -61,9 +78,7 @@ struct EditorView: View {
             
         }
         .padding()
-        .onChange(of: viewModel.attributedScriptText) { _, newValue in
-            viewModel.clearLog()
-        }
+        .focusedSceneValue(\.editorViewModel, viewModel)
     }
 }
 
