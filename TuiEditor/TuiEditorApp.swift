@@ -14,13 +14,8 @@ struct TuiEditorApp: App {
     
     @Environment(\.openWindow) private var openWindow
     @State private var isImporting: Bool = false
-    
-    // Pull the focused window’s model from FocusedValues
     @FocusedValue(\.editorViewModel) private var focusedEditor: EditorViewModel?
-
     @ObservedObject var appViewModel = AppViewModel()
-    
-//    @State var viewModel = EditorViewModel(Bundle.main.url(forResource: "example", withExtension: "tui"))
     
     var body: some Scene {
         WindowGroup {
@@ -67,7 +62,6 @@ struct TuiEditorApp: App {
                 ) { result in
                     switch result {
                     case .success(let url):
-                        // Route to the focused window’s model
                         focusedEditor?.openFile(url)
                         focusedEditor?.runSyntaxHighlighting()
                     case .failure(let error):

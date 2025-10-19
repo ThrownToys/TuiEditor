@@ -364,14 +364,27 @@ class EditorViewModel {
             
             attributedScriptText.insert(AttributedString(tabSpaces), at: index)
             scriptModified(String(attributedScriptText.characters))
-            
+            runSyntaxHighlighting()
             if let distance {
                 selection = .init(insertionPoint: attributedScriptText.index(attributedScriptText.startIndex, offsetByCharacters: distance + tabSpaces.count))
             }
             
             return .handled
         case .return:
-            return .ignored
+            var distance: Int?
+            if case .insertionPoint(let index) = selection.indices(in: attributedScriptText) {
+                distance = attributedScriptText.utf16.distance(from: attributedScriptText.startIndex, to: index)
+            }
+
+            attributedScriptText.transform(updating: &selection) { attributedScriptText in
+                attributedScriptText.insert(AttributedString("\n"), at: index)
+            }
+            scriptModified(String(attributedScriptText.characters))
+            runSyntaxHighlighting()
+            if let distance {
+                selection = .init(insertionPoint: attributedScriptText.index(attributedScriptText.startIndex, offsetByCharacters: distance + 1))
+            }
+            return .handled
         case .delete:
             attributedScriptText.transform(updating: &selection) { scriptText in
                 if case .ranges(let rangeSet) = selection.indices(in: scriptText), let firstRange = rangeSet.ranges.first {
@@ -382,6 +395,15 @@ class EditorViewModel {
             return .ignored
         case .leftArrow, .rightArrow, .upArrow, .downArrow:
             return .ignored
+        case "(", "\"":
+            attributedScriptText.transform(updating: &selection) { scriptText in
+                if let char = key.characters.first {
+                    scriptText.insert(AttributedString(String(char)), at: index)
+                }
+            }
+            scriptModified(String(attributedScriptText.characters))
+            runSyntaxHighlighting()
+            return .handled
         default:
             if key.characters == "\u{7F}" { // backspace
                 attributedScriptText.transform(updating: &selection) { scriptText in
