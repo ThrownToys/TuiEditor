@@ -1,4 +1,4 @@
-// A simple demonstration of interfacing with simple macos features
+// A simple demonstration of interfacing with native MacOS features
 
 print("beeping 5 times")
 
