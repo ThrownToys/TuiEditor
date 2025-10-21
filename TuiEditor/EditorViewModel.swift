@@ -61,7 +61,6 @@ class EditorViewModel {
             }
         }
     }
-
     
     func increaseFontSize() {
         fontSize += 1.0
@@ -219,7 +218,6 @@ class EditorViewModel {
         guard let r = UInt8(rs, radix: 16),
               let g = UInt8(gs, radix: 16),
               let b = UInt8(bs, radix: 16) else { return nil }
-//        return NSColor(red: Double(r)/255.0, green: Double(g)/255.0, blue: Double(b)/255.0, alpha: 1.0)
         return Color(red: Double(r)/255.0, green: Double(g)/255.0, blue: Double(b)/255.0)
     }
     
@@ -351,7 +349,6 @@ class EditorViewModel {
     
     func scriptModified(_ updatedScript: String) {
         scriptText = updatedScript
-//        runSyntaxHighlighting()
     }
     
     func keyPressed(_ key: KeyPress) -> KeyPress.Result {
@@ -362,7 +359,7 @@ class EditorViewModel {
             let tabSpaces = "    "
             var distance: Int?
             if case .insertionPoint(let index) = selection.indices(in: attributedScriptText) {
-                distance = attributedScriptText.utf8.distance(from: attributedScriptText.startIndex, to: index)
+                distance = attributedScriptText.utf16.distance(from: attributedScriptText.startIndex, to: index)
             }
             
             attributedScriptText.insert(AttributedString(tabSpaces), at: index)
