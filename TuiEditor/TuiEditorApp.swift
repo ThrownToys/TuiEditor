@@ -23,11 +23,14 @@ struct TuiEditorApp: App {
 //    @State var viewModel = EditorViewModel(Bundle.main.url(forResource: "example", withExtension: "tui"))
     
     var body: some Scene {
-        WindowGroup(id: "tui-editor", for: Optional<URL>.self) { url in
-            EditorView(url: url.wrappedValue)
-        } defaultValue: {
-            Bundle.main.url(forResource: "example", withExtension: "tui")
+        WindowGroup {
+            EditorView(url: Bundle.main.url(forResource: "example", withExtension: "tui"))
         }
+//        WindowGroup(id: "tui-editor", for: Optional<URL>.self) { url in
+//            EditorView(url: url.wrappedValue)
+//        } defaultValue: {
+//            Bundle.main.url(forResource: "example", withExtension: "tui")
+//        }
         .commands {
             CommandMenu("Font") {
                 Button("Increase", systemImage: "plus") {

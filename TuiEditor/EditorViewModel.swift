@@ -17,6 +17,15 @@ class EditorViewModel {
     var selection: AttributedTextSelection = .init()
     var outputText = ""
     
+    var lineNumbers: String {
+        let lineCount = attributedScriptText.characters.count(where: { $0 == "\n" })
+        var string = ""
+        for i in 1..<lineCount + 1 {
+            string += "\(i)\n"
+        }
+        return string
+    }
+    
     var fontSize = 12.0
     var customFuncs: [SwiftClosure]
     var argsClosure: SwiftClosure?
@@ -27,6 +36,13 @@ class EditorViewModel {
     
     var isEditingSyntaxHighlighting: Bool {
         fileUrl != nil && fileUrl == Bundle.main.url(forResource: "syntaxHighlighting", withExtension: "tui")
+    }
+    
+    var lineCount: Int {
+        get {
+            attributedScriptText.characters.count(where: { $0 == "\n" })
+        }
+        set {}
     }
     
     init(_ fileUrl: URL? = nil) {
@@ -203,7 +219,7 @@ class EditorViewModel {
         guard let r = UInt8(rs, radix: 16),
               let g = UInt8(gs, radix: 16),
               let b = UInt8(bs, radix: 16) else { return nil }
-        
+//        return NSColor(red: Double(r)/255.0, green: Double(g)/255.0, blue: Double(b)/255.0, alpha: 1.0)
         return Color(red: Double(r)/255.0, green: Double(g)/255.0, blue: Double(b)/255.0)
     }
     
@@ -346,7 +362,7 @@ class EditorViewModel {
             let tabSpaces = "    "
             var distance: Int?
             if case .insertionPoint(let index) = selection.indices(in: attributedScriptText) {
-                distance = attributedScriptText.utf16.distance(from: attributedScriptText.startIndex, to: index)
+                distance = attributedScriptText.utf8.distance(from: attributedScriptText.startIndex, to: index)
             }
             
             attributedScriptText.insert(AttributedString(tabSpaces), at: index)
