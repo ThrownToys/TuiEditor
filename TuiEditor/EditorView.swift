@@ -40,12 +40,20 @@ struct EditorView: View {
                 VStack(alignment: .leading) {
                     Text("Script:")
                         .font(.headline)
-                    Spacer()
-                    TextEditor(text: $viewModel.attributedScriptText, selection: $viewModel.selection)
-                        .font(.system(size: viewModel.fontSize))
-                        .onKeyPress { key in
-                            viewModel.keyPressed(key)
+                    ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                        HStack(alignment: .top) {
+                            Text(viewModel.lineNumbers)
+                                .font(.system(size: viewModel.fontSize))
+                            TextEditor(text: $viewModel.attributedScriptText, selection: $viewModel.selection)
+                                .fixedSize(horizontal: false, vertical: false)
+                                .frame(minWidth: 1000, maxWidth: .greatestFiniteMagnitude, minHeight: 500)
+                                .font(.system(size: viewModel.fontSize))
+                                .onKeyPress { key in
+                                    viewModel.keyPressed(key)
+                                }
                         }
+                        
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 VStack(alignment: .leading) {
