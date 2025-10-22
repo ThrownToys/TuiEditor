@@ -5,6 +5,7 @@
 //  A simple tui editor
 //
 /// Far from being a complete IDE, this is just a simple example of including Tui in a swift project.
+/// But this version has a few more features than the Tui repo example
 
 import SwiftUI
 public import AppKit

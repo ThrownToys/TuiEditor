@@ -16,12 +16,19 @@ class EditorViewModel {
     var attributedScriptText: AttributedString = ""
     var selection: AttributedTextSelection = .init()
     var outputText = ""
+    var errorLineNumbers: [Int] = [] {
+        didSet {
+            self.attributedScriptText = highlightErrors(attributedScriptText)
+        }
+    }
     
-    var lineNumbers: String {
+    var lineNumbers: AttributedString {
         let lineCount = attributedScriptText.characters.count(where: { $0 == "\n" })
-        var string = ""
+        var string: AttributedString = ""
         for i in 1..<lineCount + 1 {
-            string += "\(i)\n"
+            var container = AttributeContainer()
+            container.backgroundColor = errorLineNumbers.contains(i) ? .red : .clear
+            string += AttributedString("\(i)\n", attributes: container)
         }
         return string
     }
@@ -84,6 +91,8 @@ class EditorViewModel {
                 return "\(stringValue)"
             }
         }
+        
+        runSyntaxHighlighting()
     }
     
     func runSyntaxHighlighting() {
@@ -113,6 +122,28 @@ class EditorViewModel {
         if let annotatedScript {
             attributedScriptText = syntaxHighlightCharLexer(annotatedScript)
         }
+    }
+    
+    private func highlightErrors(_ attributedScriptText: AttributedString) -> AttributedString {
+        var attributedScriptText = attributedScriptText
+        
+        var lineStartIndex = attributedScriptText.characters.startIndex
+        var count = 1
+        
+        attributedScriptText.characters.indices.forEach { index in
+            if attributedScriptText.characters[index] == "\n" {
+                if errorLineNumbers.contains(count) {
+                    let range = lineStartIndex..<index
+                    var container = AttributeContainer()
+                    container.backgroundColor = .red
+                    attributedScriptText[range].setAttributes(container)
+                }
+                count += 1
+                lineStartIndex = attributedScriptText.index(afterCharacter: index)
+            }
+        }
+        
+        return attributedScriptText
     }
     
     private func syntaxHighlightCharLexer(_ annotatedScript: String/*, selection: inout AttributedTextSelection*/) -> AttributedString {
@@ -294,17 +325,15 @@ class EditorViewModel {
             let alert = NSAlert()
             alert.addButton(withTitle: "Done")
             alert.messageText = "User input (yes/no): "
-            let textView = NSTextView()
-            textView.frame.size = CGSize(width: 100, height: 20)
-            textView.font = .systemFont(ofSize: 12.0)
-            textView.backgroundColor = .textBackgroundColor
-            textView.textColor = .labelColor
-            alert.accessoryView = textView
+            let textField = NSTextField()
+            textField.frame.size = CGSize(width: 100, height: 20)
+            textField.font = .systemFont(ofSize: 12.0)
+            textField.backgroundColor = .textBackgroundColor
+            textField.textColor = .labelColor
+            alert.accessoryView = textField
             alert.runModal()
             
-            let input = textView.string.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            return input.withCString { cStr in
+            return textField.stringValue.withCString { cStr in
                 let newString = strdup(cStr) // Caller (C++) frees this
                 return newString
             }
@@ -364,14 +393,27 @@ class EditorViewModel {
             
             attributedScriptText.insert(AttributedString(tabSpaces), at: index)
             scriptModified(String(attributedScriptText.characters))
-            
+            runSyntaxHighlighting()
             if let distance {
                 selection = .init(insertionPoint: attributedScriptText.index(attributedScriptText.startIndex, offsetByCharacters: distance + tabSpaces.count))
             }
             
             return .handled
         case .return:
-            return .ignored
+            var distance: Int?
+            if case .insertionPoint(let index) = selection.indices(in: attributedScriptText) {
+                distance = attributedScriptText.utf16.distance(from: attributedScriptText.startIndex, to: index)
+            }
+
+            attributedScriptText.transform(updating: &selection) { attributedScriptText in
+                attributedScriptText.insert(AttributedString("\n"), at: index)
+            }
+            scriptModified(String(attributedScriptText.characters))
+            runSyntaxHighlighting()
+            if let distance {
+                selection = .init(insertionPoint: attributedScriptText.index(attributedScriptText.startIndex, offsetByCharacters: distance + 1))
+            }
+            return .handled
         case .delete:
             attributedScriptText.transform(updating: &selection) { scriptText in
                 if case .ranges(let rangeSet) = selection.indices(in: scriptText), let firstRange = rangeSet.ranges.first {
@@ -382,6 +424,15 @@ class EditorViewModel {
             return .ignored
         case .leftArrow, .rightArrow, .upArrow, .downArrow:
             return .ignored
+        case "(", "\"":
+            attributedScriptText.transform(updating: &selection) { scriptText in
+                if let char = key.characters.first {
+                    scriptText.insert(AttributedString(String(char)), at: index)
+                }
+            }
+            scriptModified(String(attributedScriptText.characters))
+            runSyntaxHighlighting()
+            return .handled
         default:
             if key.characters == "\u{7F}" { // backspace
                 attributedScriptText.transform(updating: &selection) { scriptText in
