@@ -79,6 +79,9 @@ struct TuiEditorApp: App {
         .onChange(of: appViewModel.outputText) { oldValue, newValue in
             focusedEditor?.outputText = newValue
         }
+        .onChange(of: appViewModel.errorLineNumbers) { _, newValue in
+            focusedEditor?.errorLineNumbers = newValue
+        }
     }
 
 }

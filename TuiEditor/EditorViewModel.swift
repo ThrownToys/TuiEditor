@@ -16,12 +16,19 @@ class EditorViewModel {
     var attributedScriptText: AttributedString = ""
     var selection: AttributedTextSelection = .init()
     var outputText = ""
+    var errorLineNumbers: [Int] = [] {
+        didSet {
+            self.attributedScriptText = highlightErrors(attributedScriptText)
+        }
+    }
     
-    var lineNumbers: String {
+    var lineNumbers: AttributedString {
         let lineCount = attributedScriptText.characters.count(where: { $0 == "\n" })
-        var string = ""
+        var string: AttributedString = ""
         for i in 1..<lineCount + 1 {
-            string += "\(i)\n"
+            var container = AttributeContainer()
+            container.backgroundColor = errorLineNumbers.contains(i) ? .red : .clear
+            string += AttributedString("\(i)\n", attributes: container)
         }
         return string
     }
@@ -84,6 +91,8 @@ class EditorViewModel {
                 return "\(stringValue)"
             }
         }
+        
+        runSyntaxHighlighting()
     }
     
     func runSyntaxHighlighting() {
@@ -113,6 +122,28 @@ class EditorViewModel {
         if let annotatedScript {
             attributedScriptText = syntaxHighlightCharLexer(annotatedScript)
         }
+    }
+    
+    private func highlightErrors(_ attributedScriptText: AttributedString) -> AttributedString {
+        var attributedScriptText = attributedScriptText
+        
+        var lineStartIndex = attributedScriptText.characters.startIndex
+        var count = 1
+        
+        attributedScriptText.characters.indices.forEach { index in
+            if attributedScriptText.characters[index] == "\n" {
+                if errorLineNumbers.contains(count) {
+                    let range = lineStartIndex..<index
+                    var container = AttributeContainer()
+                    container.backgroundColor = .red
+                    attributedScriptText[range].setAttributes(container)
+                }
+                count += 1
+                lineStartIndex = attributedScriptText.index(afterCharacter: index)
+            }
+        }
+        
+        return attributedScriptText
     }
     
     private func syntaxHighlightCharLexer(_ annotatedScript: String/*, selection: inout AttributedTextSelection*/) -> AttributedString {
