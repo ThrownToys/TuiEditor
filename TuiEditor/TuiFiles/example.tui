@@ -44,6 +44,4 @@ example = {
     {
         print("Too bad haha! Your answer was (hopefully):", value)
     }
-
-    
 }
